@@ -24,9 +24,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='MyTree',
             fields=[
-                ('ltree', mpathy.fields.LTreeField(primary_key=True, serialize=False)),
+                ('ltree', mpathy.fields.LTreeField(unique=True)),
                 ('label', models.CharField(max_length=255)),
-                ('_parent', models.ForeignKey(db_index=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='tests.MyTree')),
+                ('_parent', models.ForeignKey(db_index=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='tests.MyTree', to_field='ltree')),
             ],
             options={
                 'abstract': False,
@@ -40,4 +40,18 @@ class Migration(migrations.Migration):
             model_name='mytree',
             index=mpathy.compat.GistIndex(fields=['_parent'], name='tests_mytre__parent_05b59f_gist'),
         ),
+
+        migrations.RunSQL(
+            # Check that the ltree is always consistent with being a child of _parent
+            '''
+            ALTER TABLE tests_mytree ADD CONSTRAINT check_ltree CHECK (
+                ltree ~ (_parent_id::text || '.*{1}')::lquery
+                OR (_parent_id IS NULL AND ltree ~ '*{1}'::lquery)
+            )
+            ''',
+            reverse_sql='''
+            ALTER TABLE tests_mytree DROP CONSTRAINT check_ltree
+            ''',
+
+        )
     ]

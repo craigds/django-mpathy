@@ -6,13 +6,13 @@ from .fields import LTree, LTreeField
 
 
 class MPathNode(models.Model):
-    ltree = LTreeField(null=False, primary_key=True)
+    ltree = LTreeField(null=False, unique=True)
     label = models.CharField(null=False, blank=False, max_length=255)
 
     # Duplicating the whole path is annoying, but we need this field so that the
-    # database can ensure the parent exists when we create a node.
+    # database can ensure consistency when we create a node.
     # Otherwise, we could create 'a.b' without first creating 'a'.
-    _parent = models.ForeignKey('self', null=True, db_index=False)
+    _parent = models.ForeignKey('self', null=True, to_field='ltree', db_index=False)
 
     class Meta:
         abstract = True
