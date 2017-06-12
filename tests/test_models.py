@@ -1,82 +1,86 @@
-import pytest
-
-from django.db import connection, IntegrityError
-
 from .models import MyTree
 
 
-@pytest.fixture
-def tree(db):
-    MyTree.objects.create(label='a')
+def test_get_descendants_of_root(db):
+    a = MyTree.objects.create(label='a')
+    desc = {
+        MyTree.objects.create(label='a', parent_id='a'),
+        MyTree.objects.create(label='a', parent_id='a.a'),
+        MyTree.objects.create(label='a', parent_id='a.a.a'),
+    }
     MyTree.objects.create(label='b')
+    MyTree.objects.create(label='b', parent_id='b')
+
+    assert set(a.get_descendants()) == desc
 
 
-def test_node_creation_simple(db):
-    MyTree.objects.create(label='root1')
-    MyTree.objects.create(label='root2')
+def test_get_descendants_of_leaf(db):
+    a = MyTree.objects.create(label='a')
+    MyTree.objects.create(label='b')
+    MyTree.objects.create(label='b', parent_id='b')
+
+    assert set(a.get_descendants()) == set()
 
 
-def test_node_creation_with_no_label(db):
-    # You need a label
-    with pytest.raises(ValueError):
-        MyTree.objects.create(label='')
-    with pytest.raises(ValueError):
-        MyTree.objects.create(label=None)
-    with pytest.raises(ValueError):
-        MyTree.objects.create()
+def test_get_ancestors_of_root(db):
+    a = MyTree.objects.create(label='a')
+    MyTree.objects.create(label='b')
+    MyTree.objects.create(label='b', parent_id='b')
+
+    assert set(a.get_ancestors()) == set()
 
 
-def test_root_node_already_exists(db):
-    MyTree.objects.create(label='root1')
+def test_get_ancestors_of_leaf(db):
+    ancestors = {
+        MyTree.objects.create(label='a'),
+        MyTree.objects.create(label='a', parent_id='a'),
+        MyTree.objects.create(label='a', parent_id='a.a'),
+    }
+    aaaa = MyTree.objects.create(label='a', parent_id='a.a.a')
 
-    with pytest.raises(IntegrityError):
-        MyTree.objects.create(label='root1')
+    MyTree.objects.create(label='b')
+    MyTree.objects.create(label='b', parent_id='b')
 
-
-def test_same_label_but_different_parent(db):
-    root1 = MyTree.objects.create(label='root1')
-    MyTree.objects.create(label='root1', parent=root1)
-
-
-def test_same_label_as_sibling(db):
-    root1 = MyTree.objects.create(label='root1')
-    MyTree.objects.create(label='child', parent=root1)
-    with pytest.raises(IntegrityError):
-        MyTree.objects.create(label='child', parent=root1)
+    assert set(aaaa.get_ancestors()) == ancestors
 
 
-def _flush_constraints():
-    # the default db setup is to have constraints DEFERRED.
-    # So IntegrityErrors only happen when the transaction commits.
-    # Django's testcase thing does eventually flush the constraints but to
-    # actually test it *within* a testcase we have to flush it manually.
-    connection.cursor().execute("SET CONSTRAINTS ALL IMMEDIATE")
+def test_is_ancestor_of(db):
+    a = MyTree.objects.create(label='a')
+    aa = MyTree.objects.create(label='a', parent_id='a')
+    b = MyTree.objects.create(label='b')
+
+    assert a.is_ancestor_of(aa)
+    assert not aa.is_ancestor_of(a)
+    assert not b.is_ancestor_of(a)
+    assert not a.is_ancestor_of(b)
+    assert not b.is_ancestor_of(aa)
+    assert not aa.is_ancestor_of(b)
+
+    assert not a.is_ancestor_of(a)
+    assert a.is_ancestor_of(a, include_self=True)
+    assert not a.is_ancestor_of(b, include_self=True)
+
+    # we allow None as it's like an actual single root node.
+    assert not a.is_ancestor_of(None)
+    assert not a.is_ancestor_of(None, include_self=True)
 
 
-def test_parent_is_self_errors(db):
-    root1 = MyTree.objects.create(label='root1')
-    root1._parent = root1
-    with pytest.raises(IntegrityError):
-        root1.save()
-        _flush_constraints()
+def test_is_descendant_of(db):
+    a = MyTree.objects.create(label='a')
+    aa = MyTree.objects.create(label='a', parent_id='a')
+    b = MyTree.objects.create(label='b')
 
+    assert not a.is_descendant_of(aa)
+    assert aa.is_descendant_of(a)
+    assert not b.is_descendant_of(a)
+    assert not a.is_descendant_of(b)
+    assert not b.is_descendant_of(aa)
+    assert not aa.is_descendant_of(b)
 
-def test_parent_is_remote_ancestor_errors(db):
-    root1 = MyTree.objects.create(label='root1')
-    child2 = MyTree.objects.create(label='child2', parent=root1)
-    desc3 = MyTree.objects.create(label='desc3', parent=child2)
-    with pytest.raises(IntegrityError):
-        # To test this integrity error, have to update table without calling save()
-        # (because save() changes `ltree` to match `_parent_id`)
-        MyTree.objects.filter(pk=desc3.pk).update(_parent=root1)
-        _flush_constraints()
+    assert not a.is_descendant_of(a)
+    assert a.is_descendant_of(a, include_self=True)
+    assert not a.is_descendant_of(b, include_self=True)
 
-
-def test_parent_is_descendant_errors(db):
-    root1 = MyTree.objects.create(label='root1')
-    child2 = MyTree.objects.create(label='child2', parent=root1)
-    desc3 = MyTree.objects.create(label='desc3', parent=child2)
-    child2._parent = desc3
-    with pytest.raises(IntegrityError):
-        child2.save()
-        _flush_constraints()
+    # we allow None as it's like an actual single root node.
+    assert a.is_descendant_of(None)
+    assert a.is_descendant_of(None, include_self=True)

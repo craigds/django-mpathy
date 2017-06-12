@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('ltree', mpathy.fields.LTreeField(unique=True)),
                 ('label', models.CharField(max_length=255)),
-                ('_parent', models.ForeignKey(db_index=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='tests.MyTree', to_field='ltree')),
+                ('parent', models.ForeignKey(db_index=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='tests.MyTree', to_field='ltree')),
             ],
             options={
                 'abstract': False,
@@ -35,6 +35,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name='mytree',
-            index=mpathy.compat.GistIndex(fields=['_parent'], name='tests_mytre__parent_05b59f_gist'),
+            index=mpathy.compat.GistIndex(fields=['parent'], name='tests_mytre_parent_05b59f_gist'),
         ),
     ]

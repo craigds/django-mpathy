@@ -18,6 +18,17 @@ While both are good and widely used, both suffer from a large amount of complexi
 
 The need to support multiple database backends, as well as the lack of well-indexed database tree implementations at the time they were created, has made both projects overly complex.
 
+Both apps also put the tree consistency logic in the app layer. That's tricky to get right and has caused many tree consistency bugs in threaded environments.
+
+Mpathy delegates consistency to the database where it belongs. We use Postgres constraints to ensure that the tree fields are consistent ~~at all times~~ whenever changes are committed.
+
+# Requirements
+
+* python 2.7 or 3.4+
+* Django 1.11+
+* psycopg2 2.7+
+* Postgres
+
 # Goals
 
 mpathy intends to:

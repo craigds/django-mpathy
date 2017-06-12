@@ -29,18 +29,18 @@ def inject_pre_migration_operations(plan=None, apps=global_apps, using=DEFAULT_D
                         return
 
 
-def post_migrate_add_check_constraint(model):
+def post_migrate(model):
     names = {
         "table": quote_ident(model._meta.db_table, connection.connection),
-        "constraint": quote_ident('%s__check_ltree' % model._meta.db_table, connection.connection),
+        "check_constraint": quote_ident('%s__check_ltree' % model._meta.db_table, connection.connection),
     }
 
     cur = connection.cursor()
     # Check that the ltree is always consistent with being a child of _parent
     cur.execute('''
-        ALTER TABLE %(table)s ADD CONSTRAINT %(constraint)s CHECK (
-            (_parent_id IS NOT NULL AND ltree ~ (_parent_id::text || '.*{1}')::lquery)
-            OR (_parent_id IS NULL AND ltree ~ '*{1}'::lquery)
+        ALTER TABLE %(table)s ADD CONSTRAINT %(check_constraint)s CHECK (
+            (parent_id IS NOT NULL AND ltree ~ (parent_id::text || '.*{1}')::lquery)
+            OR (parent_id IS NULL AND ltree ~ '*{1}'::lquery)
         )
     ''' % names)
 
@@ -53,4 +53,4 @@ def inject_post_migration_operations(plan=None, apps=global_apps, using=DEFAULT_
         for index, operation in reversed(list(enumerate(migration.operations))):
             if isinstance(operation, migrations.CreateModel):
                 model = apps.get_model(migration.app_label, operation.name)
-                post_migrate_add_check_constraint(model)
+                post_migrate(model)

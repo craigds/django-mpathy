@@ -2,4 +2,5 @@ from mpathy.models import MPathNode
 
 
 class MyTree(MPathNode):
-    pass
+    def __str__(self):
+        return self.ltree

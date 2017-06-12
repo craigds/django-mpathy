@@ -22,8 +22,9 @@ setup(
     packages=['mpathy'],
     install_requires=[
         'six',
-        'psycopg2>=2.7'  # for psycopg2.extensions.quote_ident
-        'Django>=1.11'   # Note: would accept a good PR to backport this to supported releases (ie Django 1.8)
+        'psycopg2>=2.7',  # for psycopg2.extensions.quote_ident
+        'Django>=1.11',   # Note: would accept a good PR to backport this to supported releases (ie Django 1.8)
+        'django-fieldsignals>=0.2.3',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
