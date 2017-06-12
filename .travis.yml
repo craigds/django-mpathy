@@ -1,0 +1,28 @@
+sudo: false
+dist: trusty
+language: python
+services:
+  - postgresql
+
+python:
+  - "3.6"
+  - "3.5"
+  - "3.4"
+  - "2.7"
+
+env:
+  - DJANGO="Django>=1.11,<2.0"
+  - DJANGO="https://github.com/django/django/archive/master.tar.gz"
+
+matrix:
+  exclude:
+    - env: DJANGO="https://github.com/django/django/archive/master.tar.gz"
+      python: "2.7"
+  allow_failures:
+    - env: DJANGO="https://github.com/django/django/archive/master.tar.gz"
+
+before_install: pip install --upgrade pip
+
+install: pip install $DJANGO pytest pytest-django pytest-cov psycopg2
+
+script: pytest --cov=mpathy

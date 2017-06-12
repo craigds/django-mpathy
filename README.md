@@ -1,5 +1,7 @@
 # django-mpathy
 
+[![Build Status](https://travis-ci.org/craigds/django-mpathy.svg?branch=master)](https://travis-ci.org/craigds/django-mpathy)
+
 *NOTE: This software is _pre-alpha_ and will change a lot very quickly. Don't use it yet.*
 
 mpathy is a Materialised Path implementation for django. Use it for storing hierarchical data in your postgres database,
