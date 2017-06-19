@@ -10,7 +10,41 @@ class BadMove(ValueError):
     pass
 
 
-class MPathManager(models.Manager):
+class MPathQuerySet(models.QuerySet):
+    def nest_nodes(self):
+        """
+        Evaluates this queryset and returns a nested dict of nodes.
+
+        A three node tree might look something like this:
+            {
+                'root1': {
+                    'node': <MyNode root1>,
+                    'children': {
+                        'child2': {
+                            'node': <MyNode root2>,
+                            'children': {},
+                        }
+                    }
+                },
+                'root3': {
+                    'node': <MyNode root3>,
+                    'children': {},
+                }
+            }
+        """
+        _root = {'node': None, 'children': {}}
+        for node in self:
+            ptr = _root
+            for path_segment in node.ltree.labels():
+                if path_segment not in ptr['children']:
+                    ptr['children'][path_segment] = {'node': None, 'children': {}}
+                ptr = ptr['children'][path_segment]
+            ptr['node'] = node
+
+        return _root['children']
+
+
+class MPathManager(models.Manager.from_queryset(MPathQuerySet)):
     def move_subtree(self, node, new_parent):
         """
         Moves a node and all its descendants under the given new parent.

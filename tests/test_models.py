@@ -1,4 +1,13 @@
+from mpathy.fields import LTree
 from .models import MyTree
+
+
+def test_ltree_field(db):
+    a = MyTree.objects.create(label='a')
+    assert isinstance(a.ltree, LTree)
+
+    a = MyTree.objects.get()
+    assert isinstance(a.ltree, LTree)
 
 
 def test_get_descendants_of_root(db):

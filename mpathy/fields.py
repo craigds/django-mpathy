@@ -66,6 +66,11 @@ class LTreeField(models.CharField):
     def to_python(self, value):
         return LTree(value)
 
+    def from_db_value(self, value, expression, connection, context):
+        if value is None:
+            return value
+        return LTree(value)
+
 
 class LQuery(models.Lookup):
     lookup_name = 'lquery'
