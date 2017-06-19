@@ -21,10 +21,18 @@ setup(
     url='http://github.com/craigds/django-mpathy',
     packages=['mpathy'],
     install_requires=[
+        # Is it even _possible_ to write a python lib without six these days?
         'six',
-        'psycopg2>=2.7',  # for psycopg2.extensions.quote_ident
-        'Django>=1.11',   # Note: would accept a good PR to backport this to supported releases (ie Django 1.8)
-        'django-fieldsignals>=0.2.3',
+
+        # For psycopg2.extensions.quote_ident.
+        # Could probably remove this and implement quote_ident ourselves if helpful, it's very simple code
+        'psycopg2>=2.7',
+
+        # Django<1.11 would be hard to support:
+        #   * (new in 1.11) We use custom indexes. Could implement with custom SQL if *required*
+        #   * (new in 1.10) We inject migration operations in a pre_migrate signal.
+        #     This would be hard to hack around, so makes supporting 1.8 hard/impossible.
+        'Django>=1.11',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
