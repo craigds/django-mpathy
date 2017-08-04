@@ -72,6 +72,15 @@ class LTreeField(models.CharField):
         return LTree(value)
 
 
+class Level(models.Transform):
+    lookup_name = 'level'
+    function = 'nlevel'
+
+    @property
+    def output_field(self):
+        return models.IntegerField()
+
+
 class LQuery(models.Lookup):
     lookup_name = 'lquery'
 
@@ -80,9 +89,6 @@ class LQuery(models.Lookup):
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
         return '%s ~ %s' % (lhs, rhs), params
-
-
-LTreeField.register_lookup(LQuery)
 
 
 class DescendantOrEqual(models.Lookup):
@@ -95,9 +101,6 @@ class DescendantOrEqual(models.Lookup):
         return '%s <@ %s' % (lhs, rhs), params
 
 
-LTreeField.register_lookup(DescendantOrEqual)
-
-
 class AncestorOrEqual(models.Lookup):
     lookup_name = 'ancestor_or_equal'
 
@@ -108,4 +111,7 @@ class AncestorOrEqual(models.Lookup):
         return '%s @> %s' % (lhs, rhs), params
 
 
+LTreeField.register_lookup(Level)
+LTreeField.register_lookup(LQuery)
+LTreeField.register_lookup(DescendantOrEqual)
 LTreeField.register_lookup(AncestorOrEqual)
