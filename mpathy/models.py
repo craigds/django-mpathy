@@ -120,7 +120,7 @@ class MPathNode(models.Model):
     # Duplicating the whole path is annoying, but we need this field so that the
     # database can ensure consistency when we create a node.
     # Otherwise, we could create 'a.b' without first creating 'a'.
-    parent = models.ForeignKey('self', null=True, to_field='ltree', db_index=False)
+    parent = models.ForeignKey('self', related_name='children', null=True, to_field='ltree', db_index=False)
 
     objects = MPathManager()
 
@@ -161,6 +161,19 @@ class MPathNode(models.Model):
         if other is None:
             return True
         return self.ltree.is_descendant_of(other.ltree, include_self=include_self)
+
+    def get_siblings(self, include_self=False):
+        """
+        Returns a queryset of this node's siblings, using the default manager.
+
+        If include_self=True is given, the queryset will include this node.
+        """
+        mgr = self.__class__._default_manager
+        qs = mgr.filter(parent__ltree=self.parent_id)
+
+        if not include_self:
+            qs = qs.exclude(ltree=self.ltree)
+        return qs
 
     def get_children(self):
         """
