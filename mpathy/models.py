@@ -11,37 +11,28 @@ class BadMove(ValueError):
 
 
 class MPathQuerySet(models.QuerySet):
-    def nest_nodes(self):
+    def get_cached_trees(self):
         """
-        Evaluates this queryset and returns a nested dict of nodes.
-
-        A three node tree might look something like this:
-            {
-                'root1': {
-                    'node': <MyNode root1>,
-                    'children': {
-                        'child2': {
-                            'node': <MyNode root2>,
-                            'children': {},
-                        }
-                    }
-                },
-                'root3': {
-                    'node': <MyNode root3>,
-                    'children': {},
-                }
-            }
+        Evaluates this queryset and returns a list of top-level nodes.
         """
-        _root = {'node': None, 'children': {}}
+        nodes_by_path = {}
+        min_level = None
         for node in self:
-            ptr = _root
-            for path_segment in node.ltree.labels():
-                if path_segment not in ptr['children']:
-                    ptr['children'][path_segment] = {'node': None, 'children': {}}
-                ptr = ptr['children'][path_segment]
-            ptr['node'] = node
+            node._cached_children = []
+            nodes_by_path[node.ltree] = node
+            level = node.ltree.level()
+            if min_level is None or min_level > level:
+                min_level = level
 
-        return _root['children']
+        top_level_nodes = []
+        for node in self:
+            parent_path = node.ltree.parent()
+            if parent_path in nodes_by_path:
+                nodes_by_path[parent_path]._cached_children.append(node)
+            elif node.ltree.level() == min_level:
+                top_level_nodes.append(node)
+
+        return top_level_nodes
 
 
 class MPathManager(models.Manager.from_queryset(MPathQuerySet)):
@@ -120,7 +111,14 @@ class MPathNode(models.Model):
     # Duplicating the whole path is annoying, but we need this field so that the
     # database can ensure consistency when we create a node.
     # Otherwise, we could create 'a.b' without first creating 'a'.
-    parent = models.ForeignKey('self', related_name='children', null=True, to_field='ltree', db_index=False)
+    parent = models.ForeignKey(
+        'self',
+        related_name='children',
+        null=True,
+        to_field='ltree',
+        db_index=False,
+        on_delete=models.CASCADE,
+    )
 
     objects = MPathManager()
 
@@ -179,8 +177,13 @@ class MPathNode(models.Model):
         """
         Returns a queryset of children for this node, using the default manager.
         """
-        mgr = self.__class__._default_manager
-        return mgr.filter(ltree__lquery=self.ltree.children_lquery())
+        try:
+            # Shortcut the database if this node has been fetched using
+            # qs.get_cached_trees()
+            return self._cached_children
+        except AttributeError:
+            mgr = self.__class__._default_manager
+            return mgr.filter(ltree__lquery=self.ltree.children_lquery())
 
     def get_descendants(self, include_self=False):
         """
