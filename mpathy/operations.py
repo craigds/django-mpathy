@@ -2,6 +2,7 @@ from psycopg2.extensions import quote_ident
 
 from django.apps import apps as global_apps
 from django.contrib.postgres.operations import CreateExtension
+from django.core.exceptions import FieldDoesNotExist
 from django.db import connection, DEFAULT_DB_ALIAS, migrations
 
 from .fields import LTreeField
@@ -31,7 +32,14 @@ def inject_pre_migration_operations(plan=None, apps=global_apps, using=DEFAULT_D
 
 
 def post_migrate_mpathnode(model):
-    if not issubclass(model, MPathNode):
+    # Note: model *isn't* a subclass of MPathNode, because django migrations are Weird.
+    # if not issubclass(model, MPathNode):
+    # Hence the following workaround:
+    try:
+        ltree_field = model._meta.get_field('ltree')
+        if not isinstance(ltree_field, LTreeField):
+            return
+    except FieldDoesNotExist:
         return
 
     names = {
