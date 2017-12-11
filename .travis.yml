@@ -7,7 +7,6 @@ services:
 python:
   - "3.6"
   - "3.5"
-  - "3.4"
   - "2.7"
 
 env:
@@ -17,6 +16,8 @@ env:
 
 matrix:
   exclude:
+    - env: DJANGO="Django>=2.0,<2.1"
+      python: "2.7"
     - env: DJANGO="https://github.com/django/django/archive/master.tar.gz"
       python: "2.7"
   allow_failures:
