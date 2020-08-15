@@ -1,11 +1,11 @@
 sudo: false
-dist: trusty
+dist: focal
 language: python
 services:
   - postgresql
 
 python:
-  - "3.6"
+  - "3.8"
 
 env:
   - DJANGO="Django>=2.2,<3.0"
