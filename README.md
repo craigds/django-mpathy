@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/craigds/django-mpathy.svg?branch=master)](https://travis-ci.org/craigds/django-mpathy)
 
-*NOTE: This software is _pre-alpha_ and will change a lot very quickly. Don't use it yet.*
+*NOTE: This software was created as a proof of concept. It isn't used or actively maintained by the author. Pull requests will however be accepted (and releases issued to match)*
 
 mpathy is a Materialised Path implementation for django. Use it for storing hierarchical data in your postgres database,
 and accessing it from Django.
@@ -26,8 +26,7 @@ Mpathy delegates consistency to the database where it belongs. We use Postgres c
 
 # Requirements
 
-* python 2.7 or 3.4+
-* Django 1.11+
+* Any supported version of django and python
 * psycopg2 2.7+
 * Postgres
 

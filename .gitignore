@@ -3,6 +3,13 @@
 __pycache__
 build
 dist
+venv
+bin
+lib
+docs
+include
+pip-selfcheck.json
+.Python
 .tox
 MANIFEST
 *.egg

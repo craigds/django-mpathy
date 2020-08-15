@@ -1,14 +1,11 @@
-from __future__ import absolute_import, unicode_literals
 from django.db import models
-
-from six import text_type
 
 
 class Subpath(models.Func):
     function = 'subpath'
 
 
-class LTree(text_type):
+class LTree(str):
     def labels(self):
         return self.split('.')
 
@@ -27,7 +24,7 @@ class LTree(text_type):
             return True
         if other.level() <= self.level():
             return False
-        return other.labels()[:self.level() + 1] == self.labels()
+        return other.labels()[: self.level() + 1] == self.labels()
 
     def is_descendant_of(self, other, include_self=False):
         return other.is_ancestor_of(self, include_self=include_self)
