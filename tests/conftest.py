@@ -19,6 +19,8 @@ def pytest_configure():
     if not db_user:
         db_user = 'postgres'
 
+    print(f"pytest_configure - using db user: {db_user}")
+
     settings.configure(
         DEBUG_PROPAGATE_EXCEPTIONS=True,
         DATABASES={
@@ -28,9 +30,7 @@ def pytest_configure():
                 'USER': db_user,
                 'PASSWORD': '',
                 'HOST': 'localhost',
-                'TEST': {
-                    'NAME': 'mpathy_tests',
-                }
+                'TEST': {'NAME': 'mpathy_tests',},
             }
         },
         SECRET_KEY='hunter2',
@@ -46,9 +46,6 @@ def pytest_configure():
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
         ),
-        INSTALLED_APPS=(
-            'mpathy',
-            'tests',
-        ),
+        INSTALLED_APPS=('mpathy', 'tests',),
     )
     django.setup()
