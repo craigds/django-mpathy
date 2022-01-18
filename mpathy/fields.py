@@ -2,19 +2,19 @@ from django.db import models
 
 
 class Subpath(models.Func):
-    function = 'subpath'
+    function = "subpath"
 
 
 class LTree(str):
     def labels(self):
-        return self.split('.')
+        return self.split(".")
 
     def level(self):
         """
         Returns the level of this node.
         Root nodes are level 0.
         """
-        return self.count('.')
+        return self.count(".")
 
     def is_root(self):
         return self.level() == 0
@@ -31,25 +31,25 @@ class LTree(str):
 
     def parent(self):
         if self.level():
-            return LTree(self.rsplit('.', 1)[0])
+            return LTree(self.rsplit(".", 1)[0])
         return None
 
     def children_lquery(self):
         """
         Returns an lquery which finds nodes which are children of the current node.
         """
-        return '%s.*{1}' % self
+        return "%s.*{1}" % self
 
     def parent_lquery(self):
         """
         Returns an lquery to find the parent of the current node.
         """
-        return '.'.join(self.labels()[:-1])
+        return ".".join(self.labels()[:-1])
 
 
 class LTreeField(models.CharField):
     def __init__(self, *args, **kwargs):
-        kwargs['max_length'] = 256
+        kwargs["max_length"] = 256
         super(LTreeField, self).__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -58,20 +58,20 @@ class LTreeField(models.CharField):
         return name, path, args, kwargs
 
     def db_type(self, connection):
-        return 'ltree'
+        return "ltree"
 
     def to_python(self, value):
         return LTree(value)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         if value is None:
             return value
         return LTree(value)
 
 
 class Level(models.Transform):
-    lookup_name = 'level'
-    function = 'nlevel'
+    lookup_name = "level"
+    function = "nlevel"
 
     @property
     def output_field(self):
@@ -79,33 +79,33 @@ class Level(models.Transform):
 
 
 class LQuery(models.Lookup):
-    lookup_name = 'lquery'
+    lookup_name = "lquery"
 
     def as_sql(self, compiler, connection):
         lhs, lhs_params = self.process_lhs(compiler, connection)
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
-        return '%s ~ %s' % (lhs, rhs), params
+        return "%s ~ %s" % (lhs, rhs), params
 
 
 class DescendantOrEqual(models.Lookup):
-    lookup_name = 'descendant_or_equal'
+    lookup_name = "descendant_or_equal"
 
     def as_sql(self, compiler, connection):
         lhs, lhs_params = self.process_lhs(compiler, connection)
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
-        return '%s <@ %s' % (lhs, rhs), params
+        return "%s <@ %s" % (lhs, rhs), params
 
 
 class AncestorOrEqual(models.Lookup):
-    lookup_name = 'ancestor_or_equal'
+    lookup_name = "ancestor_or_equal"
 
     def as_sql(self, compiler, connection):
         lhs, lhs_params = self.process_lhs(compiler, connection)
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
-        return '%s @> %s' % (lhs, rhs), params
+        return "%s @> %s" % (lhs, rhs), params
 
 
 LTreeField.register_lookup(Level)

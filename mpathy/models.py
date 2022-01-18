@@ -1,8 +1,7 @@
-
+from django.contrib.postgres.indexes import GistIndex
 from django.db import models
 from django.db.models.expressions import CombinedExpression, RawSQL
 
-from .compat import GistIndex
 from .fields import LTree, LTreeField, Subpath
 
 
@@ -53,7 +52,10 @@ class MPathManager(models.Manager.from_queryset(MPathQuerySet)):
         from the database.
         """
         if node.is_ancestor_of(new_parent, include_self=True):
-            raise BadMove("%r can't be made a child of %r" % (node.ltree, new_parent.ltree if new_parent else None))
+            raise BadMove(
+                "%r can't be made a child of %r"
+                % (node.ltree, new_parent.ltree if new_parent else None)
+            )
 
         # Check if there's actually anything to do, return if not
         if node.parent_id is None:
@@ -69,10 +71,7 @@ class MPathManager(models.Manager.from_queryset(MPathQuerySet)):
         # not in the current node's old parent path.
         # i.e. when node is 'a.b.c', the old parent will be 'a.b',
         # so for a descendant called 'a.b.c.d.e' we want to find 'c.d.e'.
-        ltree_tail_expr = Subpath(
-            models.F('ltree'),
-            old_parent_level + 1
-        )
+        ltree_tail_expr = Subpath(models.F("ltree"), old_parent_level + 1)
 
         # Update the ltree on all descendant nodes to match new_parent
         qs = self.filter(ltree__descendant_or_equal=node.ltree)
@@ -84,24 +83,27 @@ class MPathManager(models.Manager.from_queryset(MPathQuerySet)):
             # as text. Additionally, there's no available concatenation operator for ltrees
             # exposable in django.
             new_ltree_expr = CombinedExpression(
-                lhs=RawSQL('%s::ltree', [new_parent.ltree]),
-                connector='||',
-                rhs=ltree_tail_expr
+                lhs=RawSQL("%s::ltree", [new_parent.ltree]),
+                connector="||",
+                rhs=ltree_tail_expr,
             )
         qs.update(
             ltree=new_ltree_expr,
             # Update parent at the same time as ltree, otherwise the check constraint fails
             parent=models.Case(
-                models.When(pk=node.pk, then=models.Value(new_parent.ltree if new_parent else None)),
+                models.When(
+                    pk=node.pk,
+                    then=models.Value(new_parent.ltree if new_parent else None),
+                ),
                 default=Subpath(new_ltree_expr, 0, -1),
-                output_field=node.__class__._meta.get_field('parent')
-            )
+                output_field=node.__class__._meta.get_field("parent"),
+            ),
         )
 
         # Update node in memory
         node.parent = new_parent
         node._set_ltree()
-        node.save(update_fields=['parent'])
+        node.save(update_fields=["parent"])
 
 
 class MPathNode(models.Model):
@@ -112,10 +114,10 @@ class MPathNode(models.Model):
     # database can ensure consistency when we create a node.
     # Otherwise, we could create 'a.b' without first creating 'a'.
     parent = models.ForeignKey(
-        'self',
-        related_name='children',
+        "self",
+        related_name="children",
         null=True,
-        to_field='ltree',
+        to_field="ltree",
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -125,13 +127,13 @@ class MPathNode(models.Model):
     class Meta:
         abstract = True
         indexes = [
-            GistIndex(fields=['ltree']),
-            GistIndex(fields=['parent']),
+            GistIndex(fields=["ltree"]),
+            GistIndex(fields=["parent"]),
         ]
 
     def _set_ltree(self):
         if self.parent_id:
-            ltree = '%s.%s' % (self.parent_id, self.label)
+            ltree = "%s.%s" % (self.parent_id, self.label)
         else:
             ltree = self.label
         self.ltree = LTree(ltree)
@@ -140,7 +142,10 @@ class MPathNode(models.Model):
         # If no label, let the db throw an error. Otherwise, ensure path is consistent with
         # parent and label.
         if not self.label:
-            raise ValueError("%s objects must have a label. Got: label=%r" % (self.__class__.__name__, self.label))
+            raise ValueError(
+                "%s objects must have a label. Got: label=%r"
+                % (self.__class__.__name__, self.label)
+            )
 
         # If this is a new node or parent has changed, re-calculate ltree.
         # NOTE: This only works for leaf nodes, so shouldnt be relied on.

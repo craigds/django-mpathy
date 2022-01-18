@@ -27,7 +27,6 @@ Mpathy delegates consistency to the database where it belongs. We use Postgres c
 # Requirements
 
 * Any supported version of django and python
-* psycopg2 2.7+
 * Postgres
 
 # Goals
